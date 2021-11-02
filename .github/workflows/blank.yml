@@ -1,0 +1,42 @@
+name: PR일 때만 테스트
+
+on:
+  pull_request:
+    branches:
+      - test # test라는 브랜치에만 PR 올릴 시 동작
+
+jobs:
+  build-test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      - name: Setup Node
+        uses: actions/setup-node@v1
+        with:
+          node-version: "14.x"
+
+      - name: npm install
+        run: npm install
+
+      - name: test start
+        run: npm run test:cov
+
+      - name: if fail
+        uses: actions/github-script@v4.0.2
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          script: |
+            const ref = "${{github.ref}}"
+            const pull_number = Number(ref.split("/")[2])
+            await github.pulls.createReview({
+              ...context.repo,
+              pull_number,
+              body:"테스트코드를 다시 확인해주세요.",
+              event: "REQUEST_CHANGES"
+            })
+            await github.pulls.update({
+              ...context.repo,
+              pull_number,
+              state: "closed"
+            })
+        if: failure() # 해당 명령어를 추가하면 이전 step에서 실패 했을 경우에만 이 step이 동작하게 됨
