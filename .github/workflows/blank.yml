@@ -1,7 +1,7 @@
 name: PR일 때만 테스트
 
 on:
-  pull_request:
+  push:
     branches:
       - test # test라는 브랜치에만 PR 올릴 시 동작
 
